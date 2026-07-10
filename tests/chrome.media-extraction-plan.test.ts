@@ -71,4 +71,17 @@ describe("chrome media extraction plan", () => {
       prefersUrlMode: false,
     });
   });
+
+  it("routes Loom share URLs through video/url mode like other known media hosts", () => {
+    expect(
+      planMediaExtraction({
+        url: "https://www.loom.com/share/ef3224a48a084371bd6d766ee81f083f",
+      }),
+    ).toMatchObject({
+      contentScriptInputMode: "video",
+      inputMode: "video",
+      localTranscriptKind: "media",
+      prefersUrlMode: true,
+    });
+  });
 });

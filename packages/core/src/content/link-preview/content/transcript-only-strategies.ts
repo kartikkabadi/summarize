@@ -161,6 +161,7 @@ export async function tryTranscriptOnlyStrategy({
   }
 
   const transcriptResolution = await resolveTranscriptForLink(url, html, deps, {
+    timeoutMs,
     youtubeTranscriptMode,
     mediaTranscriptMode: strategy.transcriptMode(mediaTranscriptMode),
     transcriptTimestamps,
@@ -168,6 +169,9 @@ export async function tryTranscriptOnlyStrategy({
     transcriptVideoDownload,
     cacheMode,
     fileMtime,
+    // HTML exists only so the generic Loom provider can discover caption tracks.
+    // Never replace the Loom URL with an embedded YouTube URL from that HTML.
+    embeddedMediaUrl: strategy.discoverTranscriptFromHtml ? null : undefined,
   });
   if (!transcriptResolution.text) {
     if (strategy.requiresTranscriptionProvider) {

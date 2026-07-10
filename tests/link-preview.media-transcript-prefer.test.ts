@@ -112,7 +112,11 @@ describe("link preview media transcript preference", () => {
       LOOM_URL,
       html,
       expect.any(Object),
-      expect.objectContaining({ mediaTranscriptMode: "prefer" }),
+      expect.objectContaining({
+        mediaTranscriptMode: "prefer",
+        embeddedMediaUrl: null,
+        timeoutMs: expect.any(Number),
+      }),
     );
     expect(result.content).toContain("Loom spoken transcript");
     expect(result.content).not.toContain("Loom landing page copy");
@@ -155,7 +159,11 @@ describe("link preview media transcript preference", () => {
       LOOM_URL,
       html,
       expect.any(Object),
-      expect.objectContaining({ mediaTranscriptMode: "prefer" }),
+      expect.objectContaining({
+        mediaTranscriptMode: "prefer",
+        embeddedMediaUrl: null,
+        timeoutMs: expect.any(Number),
+      }),
     );
   });
 
@@ -188,7 +196,11 @@ describe("link preview media transcript preference", () => {
       LOOM_URL,
       null,
       expect.any(Object),
-      expect.objectContaining({ mediaTranscriptMode: "prefer" }),
+      expect.objectContaining({
+        mediaTranscriptMode: "prefer",
+        embeddedMediaUrl: null,
+        timeoutMs: expect.any(Number),
+      }),
     );
     expect(result.content).toContain("Loom spoken transcript");
     expect(result.diagnostics.transcript.notes).toMatch(/HTML fetch failed/i);

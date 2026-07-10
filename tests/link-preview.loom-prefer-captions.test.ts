@@ -129,4 +129,110 @@ describe("link preview Loom prefer caption-first", () => {
       expect.objectContaining({ url: "https://cdn.example.test/video-only.m3u8" }),
     );
   });
+
+  it("keeps Loom captions when HTML also embeds an unrelated YouTube iframe", async () => {
+    fetchTranscriptWithYtDlp.mockClear();
+    const loomHtml = `
+      <!doctype html>
+      <html>
+        <body>
+          <h1>Loom landing page copy</h1>
+          <p>Do not return this page text.</p>
+          <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>
+          <video>
+            <track kind="captions" srclang="en" src="/captions.vtt" />
+          </video>
+        </body>
+      </html>
+    `;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const resolved =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      if (resolved === LOOM_URL || resolved.startsWith("https://www.loom.com/share/")) {
+        return new Response(loomHtml, { status: 200, headers: { "content-type": "text/html" } });
+      }
+      if (resolved === CAPTION_URL || resolved.endsWith("/captions.vtt")) {
+        return new Response(
+          ["WEBVTT", "", "00:00:00.000 --> 00:00:01.000", "Caption first from Loom."].join("\n"),
+          { status: 200, headers: { "content-type": "text/vtt" } },
+        );
+      }
+      if (resolved.includes("youtube.com") || resolved.includes("youtu.be")) {
+        throw new Error(`YouTube path must not run: ${resolved}`);
+      }
+      throw new Error(`unexpected fetch: ${resolved}`);
+    });
+
+    const result = await fetchLinkContent(
+      LOOM_URL,
+      { format: "text", mediaTranscript: "prefer" },
+      buildDeps(fetchMock as unknown as typeof fetch),
+    );
+
+    expect(fetchTranscriptWithYtDlp).not.toHaveBeenCalled();
+    expect(result.transcriptSource).toBe("embedded");
+    expect(result.content).toContain("Caption first from Loom");
+    expect(result.content).not.toContain("Loom landing page copy");
+    expect(result.content).not.toContain("Do not return this page text");
+    expect(result.siteName).toBe("Loom");
+    expect(result.video).toEqual({ kind: "direct", url: LOOM_URL });
+  });
+
+  it("routes yt-dlp to the original Loom URL when HTML embeds YouTube but has no captions", async () => {
+    fetchTranscriptWithYtDlp.mockClear();
+    fetchTranscriptWithYtDlp.mockResolvedValueOnce({
+      text: "generic loom transcript",
+      provider: "openai",
+      notes: [],
+      error: null,
+      segments: null,
+    });
+    const loomHtml = `
+      <!doctype html>
+      <html>
+        <body>
+          <h1>Loom landing page copy</h1>
+          <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>
+          <meta property="og:video" content="https://cdn.example.test/video-only.m3u8" />
+        </body>
+      </html>
+    `;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const resolved =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      if (resolved === LOOM_URL || resolved.startsWith("https://www.loom.com/share/")) {
+        return new Response(loomHtml, { status: 200, headers: { "content-type": "text/html" } });
+      }
+      if (resolved.includes("youtube.com") || resolved.includes("youtu.be")) {
+        throw new Error(`YouTube path must not run: ${resolved}`);
+      }
+      throw new Error(`unexpected fetch: ${resolved}`);
+    });
+
+    const result = await fetchLinkContent(
+      LOOM_URL,
+      { format: "text", mediaTranscript: "prefer" },
+      {
+        ...buildDeps(fetchMock as unknown as typeof fetch),
+        openaiApiKey: "test-key",
+      },
+    );
+
+    expect(fetchTranscriptWithYtDlp).toHaveBeenCalledTimes(1);
+    expect(fetchTranscriptWithYtDlp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: LOOM_URL,
+        service: "generic",
+        mediaKind: "video",
+      }),
+    );
+    expect(fetchTranscriptWithYtDlp).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: expect.stringMatching(/youtube\.com|youtu\.be/i),
+      }),
+    );
+    expect(result.content).toContain("generic loom transcript");
+    expect(result.content).not.toContain("Loom landing page copy");
+    expect(result.siteName).toBe("Loom");
+  });
 });
