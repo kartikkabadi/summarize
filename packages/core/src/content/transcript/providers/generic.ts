@@ -55,8 +55,12 @@ export const fetchTranscript = async (
 
   const shouldAttemptMediaTranscript =
     options.mediaTranscriptMode === "prefer" || (twitterStatus && hasEmbeddedMedia) || loomVideo;
+  // Loom must keep the original share/embed URL for yt-dlp. Embedded/og:video CDN
+  // URLs can be video-only signed renditions that break audio transcription.
   const mediaUrl = shouldAttemptMediaTranscript
-    ? (embedded?.mediaUrl ?? (isDirectMediaUrl(context.url) || loomVideo ? context.url : null))
+    ? loomVideo
+      ? context.url
+      : (embedded?.mediaUrl ?? (isDirectMediaUrl(context.url) ? context.url : null))
     : null;
 
   if (

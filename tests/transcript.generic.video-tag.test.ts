@@ -200,6 +200,70 @@ describe("generic transcript provider (video tag fallback)", () => {
     );
   });
 
+  it("passes the original Loom URL to yt-dlp even when HTML embeds a CDN video", async () => {
+    fetchTranscriptWithYtDlp.mockClear();
+    const loomUrl = "https://www.loom.com/share/ef3224a48a084371bd6d766ee81f083f";
+    const html = `
+      <html>
+        <head>
+          <meta property="og:video" content="https://cdn.example.test/video-only.m3u8" />
+        </head>
+        <body><h1>Loom recording</h1></body>
+      </html>
+    `;
+
+    await fetchTranscript(
+      { url: loomUrl, html, resourceKey: null },
+      buildOptions({ mediaTranscriptMode: "auto" }),
+    );
+
+    expect(fetchTranscriptWithYtDlp).toHaveBeenCalledTimes(1);
+    expect(fetchTranscriptWithYtDlp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: loomUrl,
+        service: "generic",
+        mediaKind: "video",
+      }),
+    );
+    expect(fetchTranscriptWithYtDlp).not.toHaveBeenCalledWith(
+      expect.objectContaining({ url: "https://cdn.example.test/video-only.m3u8" }),
+    );
+  });
+
+  it("prefers embedded Loom caption tracks before yt-dlp", async () => {
+    fetchTranscriptWithYtDlp.mockClear();
+    const loomUrl = "https://www.loom.com/share/ef3224a48a084371bd6d766ee81f083f";
+    const html = `
+      <html>
+        <head>
+          <meta property="og:video" content="https://cdn.example.test/video-only.m3u8" />
+        </head>
+        <body>
+          <video>
+            <track kind="captions" srclang="en" src="/captions.vtt" />
+          </video>
+        </body>
+      </html>
+    `;
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(["WEBVTT", "", "00:00:00.000 --> 00:00:01.000", "Caption first."].join("\n"), {
+          status: 200,
+          headers: { "content-type": "text/vtt" },
+        }),
+    );
+
+    const result = await fetchTranscript(
+      { url: loomUrl, html, resourceKey: null },
+      buildOptions({ fetch: fetchMock, mediaTranscriptMode: "prefer" }),
+    );
+
+    expect(fetchMock).toHaveBeenCalled();
+    expect(fetchTranscriptWithYtDlp).not.toHaveBeenCalled();
+    expect(result.source).toBe("embedded");
+    expect(result.text).toContain("Caption first");
+  });
+
   it("does not invoke yt-dlp for unrelated pages in auto mode", async () => {
     fetchTranscriptWithYtDlp.mockClear();
 

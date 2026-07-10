@@ -68,6 +68,8 @@ describe("content/url", () => {
     expect(isLoomVideoUrl(`https://loom.com.evil.example/share/${id}`)).toBe(false);
     expect(isLoomVideoUrl(`https://evil-loom.com/share/${id}`)).toBe(false);
     expect(isLoomVideoUrl(`https://example.com/https://loom.com/share/${id}`)).toBe(false);
+    expect(isLoomVideoUrl(`ftp://loom.com/share/${id}`)).toBe(false);
+    expect(isLoomVideoUrl(`file://loom.com/share/${id}`)).toBe(false);
   });
 
   it("detects direct media URLs", () => {

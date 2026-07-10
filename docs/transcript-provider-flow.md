@@ -32,6 +32,8 @@ Goal: keep provider entrypoints thin; keep provider policy explicit.
   Direct-media and Loom yt-dlp/transcription fallback only.
 - `packages/core/src/content/transcript/providers/generic-twitter.ts`
   X/Twitter cookies + yt-dlp orchestration only.
+- `packages/core/src/content/link-preview/content/transcript-only-strategies.ts`
+  Prefer-mode short-circuits for Spotify/Apple/X broadcasts/direct media/Loom so explicit transcript failures cannot fall back to landing-page HTML.
 
 ## Shared policy
 

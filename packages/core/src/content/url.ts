@@ -88,6 +88,10 @@ const LOOM_VIDEO_ID_PATTERN = /^[a-f0-9]{32}$/i;
 export function isLoomVideoUrl(rawUrl: string): boolean {
   try {
     const url = new URL(rawUrl);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return false;
+    }
+
     const hostname = url.hostname.toLowerCase();
     if (hostname !== "loom.com" && hostname !== "www.loom.com") {
       return false;

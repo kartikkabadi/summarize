@@ -1,7 +1,7 @@
 import { resolveTranscriptForLink } from "../../transcript/index.js";
 import { resolveTranscriptionAvailability } from "../../transcript/providers/transcription-start.js";
 import type { resolveTranscriptionConfig } from "../../transcript/transcription-config.js";
-import { isDirectMediaUrl } from "../../url.js";
+import { isDirectMediaUrl, isLoomVideoUrl } from "../../url.js";
 import type { LinkPreviewDeps } from "../deps.js";
 import type { CacheMode } from "../types.js";
 import { extractApplePodcastIds, extractSpotifyEpisodeId } from "./podcast-utils.js";
@@ -80,6 +80,22 @@ const TRANSCRIPT_ONLY_STRATEGIES: readonly TranscriptOnlyStrategy[] = [
     firecrawlNote: "Direct media URL skipped HTML/Firecrawl",
     markdownNote: "Direct media URL uses transcript content",
     siteName: null,
+    video: (url) => ({ kind: "direct", url }),
+    isVideoOnly: true,
+  },
+  {
+    // Explicit transcript requests must not fall back to Loom landing-page HTML.
+    // Auto mode still uses the normal HTML path so page content remains available
+    // when transcription is unavailable.
+    matches: (url, mode) => isLoomVideoUrl(url) && mode === "prefer",
+    requiresTranscriptionProvider: false,
+    availabilityError: null,
+    transcriptMode: (mode) => mode,
+    failureLabel: "Loom video",
+    transcriptNote: "Loom video: skipped HTML/Firecrawl",
+    firecrawlNote: "Loom video short-circuit skipped HTML/Firecrawl",
+    markdownNote: "Loom video uses transcript content",
+    siteName: "Loom",
     video: (url) => ({ kind: "direct", url }),
     isVideoOnly: true,
   },
