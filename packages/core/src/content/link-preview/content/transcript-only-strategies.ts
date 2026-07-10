@@ -1,7 +1,8 @@
+import { readTranscriptCache } from "../../transcript/cache.js";
 import { resolveTranscriptForLink } from "../../transcript/index.js";
 import { resolveTranscriptionAvailability } from "../../transcript/providers/transcription-start.js";
 import type { resolveTranscriptionConfig } from "../../transcript/transcription-config.js";
-import { isDirectMediaUrl, isLoomVideoUrl } from "../../url.js";
+import { extractLoomVideoId, isDirectMediaUrl, isLoomVideoUrl } from "../../url.js";
 import type { LinkPreviewDeps } from "../deps.js";
 import type { CacheMode } from "../types.js";
 import { fetchHtmlDocument } from "./fetcher.js";
@@ -108,6 +109,12 @@ const TRANSCRIPT_ONLY_STRATEGIES: readonly TranscriptOnlyStrategy[] = [
   },
 ];
 
+function isSameLoomRecording(originalUrl: string, finalUrl: string): boolean {
+  const originalId = extractLoomVideoId(originalUrl);
+  const finalId = extractLoomVideoId(finalUrl);
+  return originalId !== null && originalId === finalId;
+}
+
 export async function tryTranscriptOnlyStrategy({
   url,
   deps,
@@ -145,15 +152,75 @@ export async function tryTranscriptOnlyStrategy({
   if (!strategy) return null;
 
   let html: string | null = null;
+  let htmlBaseUrl: string | null = null;
   let htmlDiscoveryNote: string | null = null;
   if (strategy.discoverTranscriptFromHtml) {
+    // Cache before optional HTML discovery so warm prefer runs need zero network.
+    const cacheOutcome = await readTranscriptCache({
+      url,
+      cacheMode,
+      transcriptCache: deps.transcriptCache ?? null,
+      transcriptTimestamps,
+      transcriptDiarization: transcriptDiarization ?? null,
+      fileMtime: fileMtime ?? null,
+    });
+    if (cacheOutcome.resolution?.text) {
+      const transcriptResolution = {
+        ...cacheOutcome.resolution,
+        diagnostics: cacheOutcome.diagnostics,
+      };
+      const transcriptDiagnostics = ensureTranscriptDiagnostics(transcriptResolution, cacheMode);
+      transcriptDiagnostics.notes = appendNote(
+        transcriptDiagnostics.notes,
+        strategy.transcriptNote,
+      );
+      return finalizeExtractedLinkContent({
+        url,
+        baseContent: selectBaseContent(
+          "",
+          transcriptResolution.text,
+          transcriptResolution.segments,
+        ),
+        maxCharacters,
+        title: null,
+        description: null,
+        siteName: strategy.siteName,
+        transcriptResolution,
+        video: strategy.video(url),
+        isVideoOnly: strategy.isVideoOnly,
+        diagnostics: {
+          strategy: "html",
+          firecrawl: {
+            attempted: false,
+            used: false,
+            cacheMode,
+            cacheStatus: cacheMode === "bypass" ? "bypassed" : "unknown",
+            notes: strategy.firecrawlNote,
+          },
+          markdown: {
+            requested: markdownRequested,
+            used: false,
+            provider: null,
+            notes: strategy.markdownNote,
+          },
+          transcript: transcriptDiagnostics,
+        },
+      });
+    }
+
     try {
       const document = await fetchHtmlDocument(deps.fetch, url, {
         timeoutMs,
         onProgress: deps.onProgress ?? null,
       });
-      html = document.html;
-      htmlDiscoveryNote = "Loom HTML fetched for caption discovery";
+      if (isSameLoomRecording(url, document.finalUrl)) {
+        html = document.html;
+        htmlBaseUrl = document.finalUrl;
+        htmlDiscoveryNote = "Loom HTML fetched for caption discovery";
+      } else {
+        // Untrusted redirect: do not use foreign HTML as caption source.
+        htmlDiscoveryNote = "Loom HTML redirect changed recording; continuing with yt-dlp";
+      }
     } catch {
       // HTML is optional: continue with yt-dlp using the original Loom URL.
       htmlDiscoveryNote = "Loom HTML fetch failed; continuing with yt-dlp";
@@ -169,6 +236,7 @@ export async function tryTranscriptOnlyStrategy({
     transcriptVideoDownload,
     cacheMode,
     fileMtime,
+    htmlBaseUrl,
     // HTML exists only so the generic Loom provider can discover caption tracks.
     // Never replace the Loom URL with an embedded YouTube URL from that HTML.
     embeddedMediaUrl: strategy.discoverTranscriptFromHtml ? null : undefined,

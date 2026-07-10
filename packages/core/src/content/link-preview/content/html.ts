@@ -1,5 +1,10 @@
 import { resolveTranscriptForLink } from "../../transcript/index.js";
-import { extractYouTubeVideoId, isYouTubeUrl, isYouTubeVideoUrl } from "../../url.js";
+import {
+  extractYouTubeVideoId,
+  isLoomVideoUrl,
+  isYouTubeUrl,
+  isYouTubeVideoUrl,
+} from "../../url.js";
 import type { LinkPreviewDeps } from "../deps.js";
 import type { FirecrawlDiagnostics, MarkdownDiagnostics } from "../types.js";
 import { extractArticleContent, sanitizeHtmlForMarkdownConversion } from "./article.js";
@@ -140,13 +145,26 @@ export async function buildResultFromHtmlDocument({
   const videoDetection = detectPrimaryVideoDetailsFromHtml(mediaHtml, url);
   const detectedVideo = videoDetection?.video ?? null;
   const resolvedEmbeddedVideoMode = embeddedVideoMode ?? "auto";
-  const embeddedYoutube = resolveEmbeddedYoutubeDecision({
+  const loomVideo = isLoomVideoUrl(url);
+  const embeddedYoutubeDecision = resolveEmbeddedYoutubeDecision({
     pageUrl: url,
     detection: videoDetection,
     mode: resolvedEmbeddedVideoMode,
     youtubeTranscriptMode: youtubeTranscriptMode ?? "auto",
     mediaTranscriptMode: mediaTranscriptMode ?? "auto",
   });
+  // Loom must never canonicalize to an incidental embedded YouTube URL.
+  const embeddedYoutube = loomVideo
+    ? {
+        ...embeddedYoutubeDecision,
+        shouldUse: false,
+        youtubeTranscriptMode: youtubeTranscriptMode ?? "auto",
+        mediaTranscriptMode: mediaTranscriptMode ?? "auto",
+        notes: embeddedYoutubeDecision.detection
+          ? "Loom: embedded YouTube substitution disabled"
+          : embeddedYoutubeDecision.notes,
+      }
+    : embeddedYoutubeDecision;
   const transcriptResolution = await resolveTranscriptForLink(url, mediaHtml, deps, {
     timeoutMs,
     youtubeTranscriptMode: embeddedYoutube.youtubeTranscriptMode,
@@ -155,12 +173,16 @@ export async function buildResultFromHtmlDocument({
     transcriptDiarization,
     transcriptVideoDownload,
     cacheMode,
-    embeddedMediaUrl: embeddedYoutube.shouldUse ? embeddedYoutube.detection?.video.url : null,
+    embeddedMediaUrl: loomVideo
+      ? null
+      : embeddedYoutube.shouldUse
+        ? embeddedYoutube.detection?.video.url
+        : null,
   });
   await refreshYoutubeSourceMetrics({
     url,
     html: mediaHtml,
-    detectedVideo,
+    detectedVideo: loomVideo ? null : detectedVideo,
     transcriptResolution,
     deps,
     timeoutMs,
@@ -262,7 +284,7 @@ export async function buildResultFromHtmlDocument({
     embeddedSelection?.baseContent ??
     selectBaseContent(articleContent, transcriptResolution.text, transcriptResolution.segments);
   const contentSections = embeddedSelection?.contentSections ?? null;
-  const video = detectedVideo;
+  const video = loomVideo ? { kind: "direct" as const, url } : detectedVideo;
   const isVideoOnly =
     !transcriptResolution.text &&
     articleContent.length < MIN_HTML_CONTENT_CHARACTERS &&

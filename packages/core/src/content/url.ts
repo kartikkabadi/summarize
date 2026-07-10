@@ -85,37 +85,41 @@ export function extractYouTubeVideoId(rawUrl: string): string | null {
 
 const LOOM_VIDEO_ID_PATTERN = /^[a-f0-9]{32}$/;
 
-export function isLoomVideoUrl(rawUrl: string): boolean {
+export function extractLoomVideoId(rawUrl: string): string | null {
   try {
     const url = new URL(rawUrl);
     if (url.protocol !== "http:" && url.protocol !== "https:") {
-      return false;
+      return null;
     }
 
     // Match yt-dlp's Loom extractor: default http(s) ports only, no credentials.
     if (url.port !== "" || url.username !== "" || url.password !== "") {
-      return false;
+      return null;
     }
 
     const hostname = url.hostname.toLowerCase();
     if (hostname !== "loom.com" && hostname !== "www.loom.com") {
-      return false;
+      return null;
     }
 
     const parts = url.pathname.split("/").filter(Boolean);
     if (parts.length !== 2) {
-      return false;
+      return null;
     }
 
     const [kind, id] = parts;
     if (kind !== "share" && kind !== "embed") {
-      return false;
+      return null;
     }
 
-    return LOOM_VIDEO_ID_PATTERN.test(id);
+    return LOOM_VIDEO_ID_PATTERN.test(id) ? id : null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+export function isLoomVideoUrl(rawUrl: string): boolean {
+  return extractLoomVideoId(rawUrl) !== null;
 }
 
 export function shouldPreferUrlMode(url: string): boolean {

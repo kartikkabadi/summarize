@@ -46,6 +46,8 @@ interface ResolveTranscriptOptions {
   cacheMode?: CacheMode;
   fileMtime?: number | null;
   embeddedMediaUrl?: string | null;
+  /** Base for resolving relative caption tracks; provider/cache/yt-dlp still use `url`. */
+  htmlBaseUrl?: string | null;
 }
 
 const PROVIDERS: ProviderModule[] = [
@@ -70,6 +72,7 @@ export const resolveTranscriptForLink = async (
     cacheMode: providedCacheMode,
     fileMtime,
     embeddedMediaUrl,
+    htmlBaseUrl,
   }: ResolveTranscriptOptions = {},
 ): Promise<TranscriptResolution> => {
   const normalizedUrl = url.trim();
@@ -85,7 +88,12 @@ export const resolveTranscriptForLink = async (
       : null;
   const effectiveUrl = embeddedYoutubeUrl ?? normalizedUrl;
   const resourceKey = extractResourceKey(effectiveUrl);
-  const baseContext: ProviderContext = { url: effectiveUrl, html, resourceKey };
+  const baseContext: ProviderContext = {
+    url: effectiveUrl,
+    html,
+    resourceKey,
+    htmlBaseUrl: htmlBaseUrl ?? null,
+  };
   const provider: ProviderModule = selectProvider(baseContext);
   const cacheMode: CacheMode = providedCacheMode ?? "default";
 

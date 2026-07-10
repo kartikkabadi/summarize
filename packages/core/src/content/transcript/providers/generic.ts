@@ -20,7 +20,9 @@ export const fetchTranscript = async (
   const notes: string[] = [];
   const transcription = resolveTranscriptionConfig(options);
 
-  const embedded = context.html ? detectEmbeddedMedia(context.html, context.url) : null;
+  const embedded = context.html
+    ? detectEmbeddedMedia(context.html, context.htmlBaseUrl ?? context.url)
+    : null;
   const twitterStatus = isTwitterStatusUrl(context.url);
   const twitterMedia = twitterStatus || isTwitterBroadcastUrl(context.url);
   const loomVideo = isLoomVideoUrl(context.url);

@@ -15,6 +15,8 @@ export interface ProviderContext {
   url: string;
   html: string | null;
   resourceKey: string | null;
+  /** Base for resolving relative `<track src>` (e.g. post-redirect HTML URL). */
+  htmlBaseUrl?: string | null;
 }
 
 export interface ProviderFetchOptions {
