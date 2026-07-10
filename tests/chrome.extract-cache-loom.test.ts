@@ -20,7 +20,7 @@ describe("chrome extract-cache Loom chat routing", () => {
         title: "Loom recording",
         text: "Visible Loom page text from the extension for chat context. ".repeat(4),
         truncated: false,
-        media: null,
+        media: { hasVideo: true, hasAudio: true, hasCaptions: false },
       },
     }));
     const daemonFetchImpl = vi.fn(async () => {

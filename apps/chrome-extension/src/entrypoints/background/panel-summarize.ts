@@ -1,5 +1,6 @@
 import {
   isDirectMediaUrl,
+  isLoomVideoUrl,
   isYouTubeVideoUrl,
   shouldPreferUrlMode,
 } from "@steipete/summarize-core/content/url";
@@ -266,14 +267,24 @@ export async function summarizeActiveTab({
       return;
     }
   }
+  // Loom page extracts often report media flags, but Loom is not in
+  // shouldPreferUrlMode. Inferring video here would send mode=url +
+  // videoMode=transcript to the guarded daemon and hard-fail. Explicit
+  // opts.inputMode=video and standalone local-media paths stay unchanged.
+  const suppressImplicitLoomVideoMode =
+    opts?.inputMode == null &&
+    preparedContent.source === "page" &&
+    isLoomVideoUrl(resolvedPayload.url);
   const effectiveInputMode =
     opts?.inputMode ??
-    (resolvedPayload.media?.hasVideo === true ||
-    resolvedPayload.media?.hasAudio === true ||
-    resolvedPayload.media?.hasCaptions === true ||
-    (resolvedPayload.url && isYouTubeVideoUrl(resolvedPayload.url))
-      ? "video"
-      : undefined);
+    (suppressImplicitLoomVideoMode
+      ? undefined
+      : resolvedPayload.media?.hasVideo === true ||
+          resolvedPayload.media?.hasAudio === true ||
+          resolvedPayload.media?.hasCaptions === true ||
+          (resolvedPayload.url && isYouTubeVideoUrl(resolvedPayload.url))
+        ? "video"
+        : undefined);
   const wantsSummaryTimestamps =
     settings.summaryTimestamps &&
     (effectiveInputMode === "video" ||

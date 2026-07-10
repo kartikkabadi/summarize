@@ -70,7 +70,7 @@ describe("chrome/extractor-router", () => {
         title: "Loom recording",
         text: "Visible Loom page text from the extension",
         truncated: false,
-        media: null,
+        media: { hasVideo: true, hasAudio: true, hasCaptions: false },
       },
     }));
     const { ctx, fetchImpl, logs } = createContext({
@@ -85,6 +85,7 @@ describe("chrome/extractor-router", () => {
       extracted: expect.objectContaining({
         url: loomUrl,
         text: "Visible Loom page text from the extension",
+        media: { hasVideo: true, hasAudio: true, hasCaptions: false },
       }),
     });
     expect(extractFromTab).toHaveBeenCalled();
