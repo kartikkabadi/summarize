@@ -91,6 +91,35 @@ describe("chrome/daemon-payload", () => {
     expect(body.videoMode).toBe("transcript");
   });
 
+  it("does not auto-force Loom into url+transcript unless video mode is explicit", () => {
+    const loomUrl = "https://www.loom.com/share/ef3224a48a084371bd6d766ee81f083f";
+    const defaultBody = buildSummarizeRequestBody({
+      extracted: {
+        url: loomUrl,
+        title: "Loom recording",
+        text: "Visible Loom page text from the extension",
+        truncated: false,
+      },
+      settings: defaultSettings,
+    });
+    expect(defaultBody.mode).toBeUndefined();
+    expect(defaultBody.videoMode).toBeUndefined();
+    expect(defaultBody.text).toContain("Visible Loom page text");
+
+    const explicitVideoBody = buildSummarizeRequestBody({
+      extracted: {
+        url: loomUrl,
+        title: "Loom recording",
+        text: "Visible Loom page text from the extension",
+        truncated: false,
+      },
+      settings: defaultSettings,
+      inputMode: "video",
+    });
+    expect(explicitVideoBody.mode).toBe("url");
+    expect(explicitVideoBody.videoMode).toBe("transcript");
+  });
+
   it("keeps YouTube video input on CLI-compatible url mode", () => {
     const body = buildSummarizeRequestBody({
       extracted: {

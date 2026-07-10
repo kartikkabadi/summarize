@@ -60,6 +60,38 @@ describe("chrome/extractor-router", () => {
     ]);
   });
 
+  it("keeps Loom pages on normal page extraction instead of preferUrl hard-switch", async () => {
+    const loomUrl = "https://www.loom.com/share/ef3224a48a084371bd6d766ee81f083f";
+    const extractFromTab = vi.fn(async () => ({
+      ok: true as const,
+      data: {
+        ok: true as const,
+        url: loomUrl,
+        title: "Loom recording",
+        text: "Visible Loom page text from the extension",
+        truncated: false,
+        media: null,
+      },
+    }));
+    const { ctx, fetchImpl, logs } = createContext({
+      url: loomUrl,
+      extractFromTab,
+    });
+
+    const result = await routeExtract(ctx);
+
+    expect(result).toEqual({
+      source: "page",
+      extracted: expect.objectContaining({
+        url: loomUrl,
+        text: "Visible Loom page text from the extension",
+      }),
+    });
+    expect(extractFromTab).toHaveBeenCalled();
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(logs.map((entry) => entry.event)).not.toContain("extractor.route.preferUrlHardSwitch");
+  });
+
   it("extracts Reddit comments through the .json API before page readability", async () => {
     const redditJson = [
       {

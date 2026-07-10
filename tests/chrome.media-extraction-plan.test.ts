@@ -72,16 +72,22 @@ describe("chrome media extraction plan", () => {
     });
   });
 
-  it("routes Loom share URLs through video/url mode like other known media hosts", () => {
+  it("does not hard-switch Loom share URLs to video/url mode by host alone", () => {
+    const loomUrl = "https://www.loom.com/share/ef3224a48a084371bd6d766ee81f083f";
+    expect(planMediaExtraction({ url: loomUrl })).toMatchObject({
+      inputMode: null,
+      prefersUrlMode: false,
+      localTranscriptKind: null,
+    });
     expect(
       planMediaExtraction({
-        url: "https://www.loom.com/share/ef3224a48a084371bd6d766ee81f083f",
+        url: loomUrl,
+        requestedInputMode: "video",
       }),
     ).toMatchObject({
-      contentScriptInputMode: "video",
       inputMode: "video",
       localTranscriptKind: "media",
-      prefersUrlMode: true,
+      prefersUrlMode: false,
     });
   });
 });

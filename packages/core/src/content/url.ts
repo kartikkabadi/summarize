@@ -119,11 +119,14 @@ export function isLoomVideoUrl(rawUrl: string): boolean {
 }
 
 export function shouldPreferUrlMode(url: string): boolean {
+  // Loom is intentionally omitted: guarded daemon/Chrome URL flows cannot pass
+  // unresolved Loom URLs to yt-dlp, so hard-preferring URL/video mode would
+  // discard supplied page text or hard-fail. CLI/core Loom transcript routing
+  // uses isLoomVideoUrl(...) directly instead.
   return (
     isYouTubeVideoUrl(url) ||
     isTwitterStatusUrl(url) ||
     isTwitterBroadcastUrl(url) ||
-    isLoomVideoUrl(url) ||
     isDirectMediaUrl(url) ||
     isPodcastHost(url)
   );

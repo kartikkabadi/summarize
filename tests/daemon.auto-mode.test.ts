@@ -35,4 +35,26 @@ describe("daemon/auto-mode", () => {
       }),
     ).toEqual({ primary: "url", fallback: null });
   });
+
+  it("uses supplied page text first for Loom in guarded daemon auto mode", () => {
+    const loomUrl = "https://www.loom.com/share/ef3224a48a084371bd6d766ee81f083f";
+    expect(
+      resolveAutoDaemonMode({
+        url: loomUrl,
+        hasText: true,
+      }),
+    ).toEqual({
+      primary: "page",
+      fallback: "url",
+    });
+    expect(
+      resolveAutoDaemonMode({
+        url: loomUrl,
+        hasText: false,
+      }),
+    ).toEqual({
+      primary: "url",
+      fallback: null,
+    });
+  });
 });

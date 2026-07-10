@@ -113,8 +113,11 @@ describe("content/url", () => {
     expect(shouldPreferUrlMode("https://www.youtube.com/watch?v=dQw4w9WgXcQ")).toBe(true);
     expect(shouldPreferUrlMode("https://x.com/user/status/123")).toBe(true);
     expect(shouldPreferUrlMode("https://x.com/i/broadcasts/1PlJQOpPLXXKE")).toBe(true);
+    // Loom is recognized for CLI/core transcript routing via isLoomVideoUrl, but
+    // must not hard-prefer shared URL/video mode (guarded daemon/Chrome cannot
+    // pass unresolved Loom URLs to yt-dlp).
     expect(shouldPreferUrlMode("https://www.loom.com/share/ef3224a48a084371bd6d766ee81f083f")).toBe(
-      true,
+      false,
     );
     expect(shouldPreferUrlMode("https://example.com/video.mp4")).toBe(true);
     expect(shouldPreferUrlMode("https://open.spotify.com/episode/7makk4oTQel546B0PZlDM5")).toBe(

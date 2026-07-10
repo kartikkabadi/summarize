@@ -689,7 +689,7 @@ describe("createUrlExtractionSession", () => {
     expect(ctx.cache.store.setJson).not.toHaveBeenCalled();
   });
 
-  it("keeps best-effort URL-only fallback for Loom auto-mode extraction failures", async () => {
+  it("rejects complete Loom auto-mode extraction failures like ordinary non-preferUrl pages", async () => {
     const ctx = createCtx();
     ctx.flags.videoMode = "auto";
     const session = createUrlExtractionSession({
@@ -704,12 +704,10 @@ describe("createUrlExtractionSession", () => {
     const loomUrl = "https://www.loom.com/share/ef3224a48a084371bd6d766ee81f083f";
     fetchLinkContentWithBirdTip.mockRejectedValueOnce(new Error("temporary extract failure"));
 
-    const result = await session.fetchWithCache(loomUrl);
-    expect(result.content).toBe("");
-    expect(result.isVideoOnly).toBe(true);
-    expect(result.diagnostics.firecrawl.notes).toMatch(
-      /url-only fallback.*temporary extract failure/,
-    );
+    // Loom is not in shouldPreferUrlMode, so the empty URL-only preferUrl fallback
+    // does not apply. Successful Loom auto extracts can still return page content
+    // from the HTML path when transcription is unavailable.
+    await expect(session.fetchWithCache(loomUrl)).rejects.toThrow(/temporary extract failure/);
     expect(ctx.cache.store.setJson).not.toHaveBeenCalled();
   });
 });
