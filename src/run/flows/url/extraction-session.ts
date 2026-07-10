@@ -355,7 +355,11 @@ export function createUrlExtractionSession({
           : false;
       const isTwitter = urlUtils.isTwitterStatusUrl?.(targetUrl) ?? false;
       const isPodcast = urlUtils.isPodcastHost?.(targetUrl) ?? false;
-      if (!preferUrlMode || isTwitter || isPodcast) throw err;
+      const isLoomPreferTranscript =
+        (urlUtils.isLoomVideoUrl?.(targetUrl) ?? false) && options.mediaTranscript === "prefer";
+      // Explicit Loom transcript requests must surface the real failure instead of an
+      // empty URL-only success shell with the error buried in diagnostics.
+      if (!preferUrlMode || isTwitter || isPodcast || isLoomPreferTranscript) throw err;
       writeVerbose(
         io.stderr,
         flags.verbose,

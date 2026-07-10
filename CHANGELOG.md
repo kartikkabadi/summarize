@@ -5,7 +5,7 @@
 ### Fixes
 
 - Security: block private browser-media URLs in the extension and stop remote binary attachments from auto-enabling broad CLI tool permissions.
-- Loom: recognize share/embed video URLs and route them through the generic yt-dlp transcription path with audio-capable format selection; explicit `--video-mode transcript` failures reject instead of returning landing-page HTML (#353).
+- Loom: recognize share/embed video URLs and route them through the generic yt-dlp transcription path with audio-capable format selection; explicit `--video-mode transcript` failures reject instead of returning landing-page HTML, while prefer-mode still discovers embedded captions from Loom HTML (#353).
 
 ## 0.21.3 - 2026-07-06
 

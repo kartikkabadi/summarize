@@ -96,6 +96,7 @@ export async function fetchLinkContent(
     cacheMode,
     fileMtime,
     markdownRequested,
+    timeoutMs,
   });
   if (transcriptOnlyResult) return transcriptOnlyResult;
 

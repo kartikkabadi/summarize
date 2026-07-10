@@ -33,7 +33,7 @@ Goal: keep provider entrypoints thin; keep provider policy explicit.
 - `packages/core/src/content/transcript/providers/generic-twitter.ts`
   X/Twitter cookies + yt-dlp orchestration only.
 - `packages/core/src/content/link-preview/content/transcript-only-strategies.ts`
-  Prefer-mode short-circuits for Spotify/Apple/X broadcasts/direct media/Loom so explicit transcript failures cannot fall back to landing-page HTML.
+  Prefer-mode short-circuits for Spotify/Apple/X broadcasts/direct media/Loom so explicit transcript failures cannot fall back to landing-page HTML. Loom prefer mode may fetch HTML only for caption-track discovery before yt-dlp.
 
 ## Shared policy
 

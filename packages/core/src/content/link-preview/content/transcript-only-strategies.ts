@@ -4,6 +4,7 @@ import type { resolveTranscriptionConfig } from "../../transcript/transcription-
 import { isDirectMediaUrl, isLoomVideoUrl } from "../../url.js";
 import type { LinkPreviewDeps } from "../deps.js";
 import type { CacheMode } from "../types.js";
+import { fetchHtmlDocument } from "./fetcher.js";
 import { extractApplePodcastIds, extractSpotifyEpisodeId } from "./podcast-utils.js";
 import { isTwitterBroadcastUrl } from "./twitter-utils.js";
 import type { ExtractedLinkContent, MediaTranscriptMode, YoutubeTranscriptMode } from "./types.js";
@@ -26,6 +27,11 @@ type TranscriptOnlyStrategy = {
   siteName: string | null;
   video: (url: string) => { kind: "direct"; url: string } | null;
   isVideoOnly: boolean;
+  /**
+   * Fetch HTML only as optional transcript-discovery input (e.g. caption tracks).
+   * Never use the HTML as article/page content for this strategy.
+   */
+  discoverTranscriptFromHtml?: boolean;
 };
 
 const TRANSCRIPT_ONLY_STRATEGIES: readonly TranscriptOnlyStrategy[] = [
@@ -92,12 +98,13 @@ const TRANSCRIPT_ONLY_STRATEGIES: readonly TranscriptOnlyStrategy[] = [
     availabilityError: null,
     transcriptMode: (mode) => mode,
     failureLabel: "Loom video",
-    transcriptNote: "Loom video: skipped HTML/Firecrawl",
-    firecrawlNote: "Loom video short-circuit skipped HTML/Firecrawl",
+    transcriptNote: "Loom video: transcript-only (HTML used only for caption discovery)",
+    firecrawlNote: "Loom video short-circuit skipped Firecrawl/page extraction",
     markdownNote: "Loom video uses transcript content",
     siteName: "Loom",
     video: (url) => ({ kind: "direct", url }),
     isVideoOnly: true,
+    discoverTranscriptFromHtml: true,
   },
 ];
 
@@ -114,6 +121,7 @@ export async function tryTranscriptOnlyStrategy({
   cacheMode,
   fileMtime,
   markdownRequested,
+  timeoutMs,
 }: {
   url: string;
   deps: LinkPreviewDeps;
@@ -129,13 +137,30 @@ export async function tryTranscriptOnlyStrategy({
   cacheMode: CacheMode;
   fileMtime: number | null;
   markdownRequested: boolean;
+  timeoutMs: number;
 }): Promise<ExtractedLinkContent | null> {
   const strategy = TRANSCRIPT_ONLY_STRATEGIES.find((candidate) =>
     candidate.matches(url, mediaTranscriptMode),
   );
   if (!strategy) return null;
 
-  const transcriptResolution = await resolveTranscriptForLink(url, null, deps, {
+  let html: string | null = null;
+  let htmlDiscoveryNote: string | null = null;
+  if (strategy.discoverTranscriptFromHtml) {
+    try {
+      const document = await fetchHtmlDocument(deps.fetch, url, {
+        timeoutMs,
+        onProgress: deps.onProgress ?? null,
+      });
+      html = document.html;
+      htmlDiscoveryNote = "Loom HTML fetched for caption discovery";
+    } catch {
+      // HTML is optional: continue with yt-dlp using the original Loom URL.
+      htmlDiscoveryNote = "Loom HTML fetch failed; continuing with yt-dlp";
+    }
+  }
+
+  const transcriptResolution = await resolveTranscriptForLink(url, html, deps, {
     youtubeTranscriptMode,
     mediaTranscriptMode: strategy.transcriptMode(mediaTranscriptMode),
     transcriptTimestamps,
@@ -157,9 +182,13 @@ export async function tryTranscriptOnlyStrategy({
 
   const transcriptDiagnostics = ensureTranscriptDiagnostics(transcriptResolution, cacheMode);
   transcriptDiagnostics.notes = appendNote(transcriptDiagnostics.notes, strategy.transcriptNote);
+  if (htmlDiscoveryNote) {
+    transcriptDiagnostics.notes = appendNote(transcriptDiagnostics.notes, htmlDiscoveryNote);
+  }
 
   return finalizeExtractedLinkContent({
     url,
+    // Never surface article/landing-page HTML from this path.
     baseContent: selectBaseContent("", transcriptResolution.text, transcriptResolution.segments),
     maxCharacters,
     title: null,

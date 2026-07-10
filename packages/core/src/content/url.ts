@@ -83,12 +83,17 @@ export function extractYouTubeVideoId(rawUrl: string): string | null {
   return null;
 }
 
-const LOOM_VIDEO_ID_PATTERN = /^[a-f0-9]{32}$/i;
+const LOOM_VIDEO_ID_PATTERN = /^[a-f0-9]{32}$/;
 
 export function isLoomVideoUrl(rawUrl: string): boolean {
   try {
     const url = new URL(rawUrl);
     if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return false;
+    }
+
+    // Match yt-dlp's Loom extractor: default http(s) ports only, no credentials.
+    if (url.port !== "" || url.username !== "" || url.password !== "") {
       return false;
     }
 

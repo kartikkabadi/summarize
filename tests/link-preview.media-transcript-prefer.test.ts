@@ -80,7 +80,7 @@ describe("link preview media transcript preference", () => {
     );
   });
 
-  it("short-circuits explicit Loom transcript requests to transcript content", async () => {
+  it("fetches Loom HTML for caption discovery on explicit transcript requests", async () => {
     mocks.resolveTranscriptForLink.mockReset();
     mocks.resolveTranscriptForLink.mockResolvedValue({
       text: "Loom spoken transcript",
@@ -95,9 +95,11 @@ describe("link preview media transcript preference", () => {
         notes: null,
       },
     });
-    const fetchMock = vi.fn(async () => {
-      throw new Error("HTML fetch should not occur for explicit Loom transcript mode");
-    });
+    const html =
+      "<!doctype html><html><body><h1>Loom landing page copy</h1><p>Do not return this.</p></body></html>";
+    const fetchMock = vi.fn(
+      async () => new Response(html, { status: 200, headers: { "content-type": "text/html" } }),
+    );
 
     const result = await fetchLinkContent(
       LOOM_URL,
@@ -105,10 +107,10 @@ describe("link preview media transcript preference", () => {
       buildDeps(fetchMock as unknown as typeof fetch),
     );
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalled();
     expect(mocks.resolveTranscriptForLink).toHaveBeenCalledWith(
       LOOM_URL,
-      null,
+      html,
       expect.any(Object),
       expect.objectContaining({ mediaTranscriptMode: "prefer" }),
     );
@@ -134,9 +136,11 @@ describe("link preview media transcript preference", () => {
         notes: "yt-dlp transcription failed: Private video",
       },
     });
-    const fetchMock = vi.fn(async () => {
-      throw new Error("HTML fetch should not occur for explicit Loom transcript mode");
-    });
+    const html =
+      "<!doctype html><html><body><h1>Loom landing page copy</h1><p>Do not return this.</p></body></html>";
+    const fetchMock = vi.fn(
+      async () => new Response(html, { status: 200, headers: { "content-type": "text/html" } }),
+    );
 
     await expect(
       fetchLinkContent(
@@ -146,12 +150,47 @@ describe("link preview media transcript preference", () => {
       ),
     ).rejects.toThrow(/Failed to transcribe Loom video.*Private video/i);
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalled();
+    expect(mocks.resolveTranscriptForLink).toHaveBeenCalledWith(
+      LOOM_URL,
+      html,
+      expect.any(Object),
+      expect.objectContaining({ mediaTranscriptMode: "prefer" }),
+    );
+  });
+
+  it("continues Loom prefer transcription when HTML discovery fetch fails", async () => {
+    mocks.resolveTranscriptForLink.mockReset();
+    mocks.resolveTranscriptForLink.mockResolvedValue({
+      text: "Loom spoken transcript",
+      source: "yt-dlp",
+      metadata: { provider: "generic", kind: "video", transcriptionProvider: "openai" },
+      diagnostics: {
+        cacheMode: "default",
+        cacheStatus: "miss",
+        textProvided: true,
+        provider: "generic",
+        attemptedProviders: ["yt-dlp"],
+        notes: null,
+      },
+    });
+    const fetchMock = vi.fn(async () => {
+      throw new Error("HTML unavailable");
+    });
+
+    const result = await fetchLinkContent(
+      LOOM_URL,
+      { format: "text", mediaTranscript: "prefer" },
+      buildDeps(fetchMock as unknown as typeof fetch),
+    );
+
     expect(mocks.resolveTranscriptForLink).toHaveBeenCalledWith(
       LOOM_URL,
       null,
       expect.any(Object),
       expect.objectContaining({ mediaTranscriptMode: "prefer" }),
     );
+    expect(result.content).toContain("Loom spoken transcript");
+    expect(result.diagnostics.transcript.notes).toMatch(/HTML fetch failed/i);
   });
 });

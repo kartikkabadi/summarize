@@ -70,6 +70,9 @@ describe("content/url", () => {
     expect(isLoomVideoUrl(`https://example.com/https://loom.com/share/${id}`)).toBe(false);
     expect(isLoomVideoUrl(`ftp://loom.com/share/${id}`)).toBe(false);
     expect(isLoomVideoUrl(`file://loom.com/share/${id}`)).toBe(false);
+    expect(isLoomVideoUrl(`https://loom.com:8443/share/${id}`)).toBe(false);
+    expect(isLoomVideoUrl(`https://user:pass@loom.com/share/${id}`)).toBe(false);
+    expect(isLoomVideoUrl(`https://www.loom.com/share/${id.toUpperCase()}`)).toBe(false);
   });
 
   it("detects direct media URLs", () => {

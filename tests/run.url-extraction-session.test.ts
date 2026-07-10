@@ -665,4 +665,51 @@ describe("createUrlExtractionSession", () => {
       /transcript failed/,
     );
   });
+
+  it("rethrows explicit Loom transcript failures instead of empty URL-only success", async () => {
+    const ctx = createCtx();
+    ctx.flags.videoMode = "transcript";
+    const session = createUrlExtractionSession({
+      ctx: ctx as never,
+      markdown: {
+        convertHtmlToMarkdown: vi.fn(),
+        effectiveMarkdownMode: "off",
+        markdownRequested: false,
+      },
+      onProgress: null,
+    });
+    const loomUrl = "https://www.loom.com/share/ef3224a48a084371bd6d766ee81f083f";
+    fetchLinkContentWithBirdTip.mockRejectedValueOnce(
+      new Error("Failed to transcribe Loom video (Missing transcription provider)"),
+    );
+
+    await expect(session.fetchWithCache(loomUrl)).rejects.toThrow(
+      /Failed to transcribe Loom video.*Missing transcription provider/,
+    );
+    expect(ctx.cache.store.setJson).not.toHaveBeenCalled();
+  });
+
+  it("keeps best-effort URL-only fallback for Loom auto-mode extraction failures", async () => {
+    const ctx = createCtx();
+    ctx.flags.videoMode = "auto";
+    const session = createUrlExtractionSession({
+      ctx: ctx as never,
+      markdown: {
+        convertHtmlToMarkdown: vi.fn(),
+        effectiveMarkdownMode: "off",
+        markdownRequested: false,
+      },
+      onProgress: null,
+    });
+    const loomUrl = "https://www.loom.com/share/ef3224a48a084371bd6d766ee81f083f";
+    fetchLinkContentWithBirdTip.mockRejectedValueOnce(new Error("temporary extract failure"));
+
+    const result = await session.fetchWithCache(loomUrl);
+    expect(result.content).toBe("");
+    expect(result.isVideoOnly).toBe(true);
+    expect(result.diagnostics.firecrawl.notes).toMatch(
+      /url-only fallback.*temporary extract failure/,
+    );
+    expect(ctx.cache.store.setJson).not.toHaveBeenCalled();
+  });
 });
