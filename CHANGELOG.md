@@ -5,6 +5,7 @@
 ### Fixes
 
 - Security: block private browser-media URLs in the extension and stop remote binary attachments from auto-enabling broad CLI tool permissions.
+- Loom: recognize share/embed video URLs and route them through the generic yt-dlp transcription path with audio-capable format selection (#353).
 
 ## 0.21.3 - 2026-07-06
 

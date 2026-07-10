@@ -4,6 +4,7 @@ import {
   inferDirectMediaKind,
   isDirectMediaExtension,
   isDirectMediaUrl,
+  isLoomVideoUrl,
   isPodcastHost,
   isTwitterBroadcastUrl,
   isTwitterStatusUrl,
@@ -52,6 +53,23 @@ describe("content/url", () => {
     expect(isTwitterBroadcastUrl("https://x.com/i/spaces/1")).toBe(false);
   });
 
+  it("detects Loom share and embed video URLs", () => {
+    const id = "ef3224a48a084371bd6d766ee81f083f";
+    expect(isLoomVideoUrl(`https://www.loom.com/share/${id}`)).toBe(true);
+    expect(isLoomVideoUrl(`https://loom.com/share/${id}`)).toBe(true);
+    expect(isLoomVideoUrl(`https://www.loom.com/embed/${id}`)).toBe(true);
+    expect(isLoomVideoUrl(`https://loom.com/embed/${id}`)).toBe(true);
+    expect(isLoomVideoUrl(`https://www.loom.com/share/${id}?sid=abc`)).toBe(true);
+    expect(isLoomVideoUrl(`https://www.loom.com/share/${id}#t=1`)).toBe(true);
+    expect(isLoomVideoUrl(`https://www.loom.com/share/${id}/`)).toBe(true);
+    expect(isLoomVideoUrl(`https://www.loom.com/share/not-a-valid-id`)).toBe(false);
+    expect(isLoomVideoUrl(`https://www.loom.com/share/folder/${id}`)).toBe(false);
+    expect(isLoomVideoUrl(`https://www.loom.com/community/${id}`)).toBe(false);
+    expect(isLoomVideoUrl(`https://loom.com.evil.example/share/${id}`)).toBe(false);
+    expect(isLoomVideoUrl(`https://evil-loom.com/share/${id}`)).toBe(false);
+    expect(isLoomVideoUrl(`https://example.com/https://loom.com/share/${id}`)).toBe(false);
+  });
+
   it("detects direct media URLs", () => {
     expect(isDirectMediaUrl("https://example.com/video.mp4")).toBe(true);
     expect(isDirectMediaUrl("https://example.com/audio.mp3?x=1")).toBe(true);
@@ -90,6 +108,9 @@ describe("content/url", () => {
     expect(shouldPreferUrlMode("https://www.youtube.com/watch?v=dQw4w9WgXcQ")).toBe(true);
     expect(shouldPreferUrlMode("https://x.com/user/status/123")).toBe(true);
     expect(shouldPreferUrlMode("https://x.com/i/broadcasts/1PlJQOpPLXXKE")).toBe(true);
+    expect(shouldPreferUrlMode("https://www.loom.com/share/ef3224a48a084371bd6d766ee81f083f")).toBe(
+      true,
+    );
     expect(shouldPreferUrlMode("https://example.com/video.mp4")).toBe(true);
     expect(shouldPreferUrlMode("https://open.spotify.com/episode/7makk4oTQel546B0PZlDM5")).toBe(
       true,

@@ -8,8 +8,11 @@ import { ProgressKind } from "../../../link-preview/deps.js";
 import { resolveLocalDirectMediaSource, type LocalDirectMediaSource } from "../../../local-file.js";
 import { runYtDlpDownload } from "./yt-dlp-process.js";
 
+// Prefer audio-only, then combined formats that definitely include an audio stream.
+// Never fall through to an unconstrained `best` that can resolve to video-only media
+// (for example Loom HLS video renditions without an audio track).
 const DEFAULT_AUDIO_FORMAT =
-  "bestaudio[vcodec=none]/best[height<=360]/best[height<=480]/best[height<=720]/best";
+  "bestaudio[vcodec=none]/best[height<=360][acodec!=none]/best[height<=480][acodec!=none]/best[height<=720][acodec!=none]/best[acodec!=none]";
 const DEFAULT_SHARED_VIDEO_FORMAT =
   "bestvideo[height<=720][vcodec^=avc1][ext=mp4]/bestvideo[height<=720][ext=mp4]/bestvideo[height<=720],bestaudio[vcodec=none]";
 

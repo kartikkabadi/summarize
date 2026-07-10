@@ -382,6 +382,38 @@ describe("yt-dlp transcript helper", () => {
     );
   });
 
+  it("selects only audio-capable formats for transcription downloads", async () => {
+    (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      new Response(JSON.stringify({ text: "OpenAI transcript" }), { status: 200 }),
+    );
+
+    await fetchTranscriptWithYtDlp({
+      ytDlpPath: "/usr/bin/yt-dlp",
+      openaiApiKey: "OPENAI",
+      url: "https://www.loom.com/share/ef3224a48a084371bd6d766ee81f083f",
+      service: "generic",
+      mediaKind: "video",
+    });
+
+    const args = spawnMock.mock.calls.find(([command]) => command === "/usr/bin/yt-dlp")?.[1] ?? [];
+    const formatIndex = args.indexOf("-f");
+    expect(formatIndex).toBeGreaterThanOrEqual(0);
+    const format = String(args[formatIndex + 1] ?? "");
+    expect(args).toEqual(expect.arrayContaining(["-x", "--audio-format", "mp3"]));
+    expect(format.startsWith("bestaudio")).toBe(true);
+    expect(format).toContain("bestaudio[vcodec=none]");
+    // Every combined `best` fallback must require an audio stream.
+    const fallbacks = format.split("/").slice(1);
+    expect(fallbacks.length).toBeGreaterThan(0);
+    for (const fallback of fallbacks) {
+      expect(fallback.startsWith("best")).toBe(true);
+      expect(fallback).toContain("[acodec!=none]");
+    }
+    // Unconstrained video-capable `best` must not remain as a last resort.
+    expect(format.endsWith("/best")).toBe(false);
+    expect(format.split("/")).not.toContain("best");
+  });
+
   it("emits download progress events from yt-dlp output", async () => {
     spawnMock.mockImplementation(() => {
       const proc = new EventEmitter() as unknown as {

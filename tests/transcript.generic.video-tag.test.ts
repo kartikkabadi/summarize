@@ -147,4 +147,72 @@ describe("generic transcript provider (video tag fallback)", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it("routes Loom share URLs through yt-dlp in auto mode without embedded media", async () => {
+    fetchTranscriptWithYtDlp.mockClear();
+    const loomUrl = "https://www.loom.com/share/ef3224a48a084371bd6d766ee81f083f";
+
+    const result = await fetchTranscript(
+      {
+        url: loomUrl,
+        html: "<html><body><h1>Loom recording</h1></body></html>",
+        resourceKey: null,
+      },
+      buildOptions({ mediaTranscriptMode: "auto" }),
+    );
+
+    expect(fetchTranscriptWithYtDlp).toHaveBeenCalledTimes(1);
+    expect(fetchTranscriptWithYtDlp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: loomUrl,
+        service: "generic",
+        mediaKind: "video",
+      }),
+    );
+    expect(result.source).toBe("yt-dlp");
+    expect(result.text).toBe("yt-dlp transcript");
+    expect(result.attemptedProviders).toContain("yt-dlp");
+    expect(result.segments).toEqual([
+      { startMs: 0, endMs: 1000, speaker: "Speaker A", text: "Hello" },
+    ]);
+    expect(result.metadata).toMatchObject({
+      provider: "generic",
+      kind: "video",
+      transcriptionProvider: "openai",
+    });
+  });
+
+  it("routes Loom embed URLs through yt-dlp in prefer mode", async () => {
+    fetchTranscriptWithYtDlp.mockClear();
+    const loomUrl = "https://loom.com/embed/ef3224a48a084371bd6d766ee81f083f";
+
+    await fetchTranscript(
+      { url: loomUrl, html: null, resourceKey: null },
+      buildOptions({ mediaTranscriptMode: "prefer" }),
+    );
+
+    expect(fetchTranscriptWithYtDlp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: loomUrl,
+        service: "generic",
+        mediaKind: "video",
+      }),
+    );
+  });
+
+  it("does not invoke yt-dlp for unrelated pages in auto mode", async () => {
+    fetchTranscriptWithYtDlp.mockClear();
+
+    const result = await fetchTranscript(
+      {
+        url: "https://example.com/blog/post",
+        html: "<html><body><article>Hello</article></body></html>",
+        resourceKey: null,
+      },
+      buildOptions({ mediaTranscriptMode: "auto" }),
+    );
+
+    expect(fetchTranscriptWithYtDlp).not.toHaveBeenCalled();
+    expect(result.metadata).toMatchObject({ provider: "generic", reason: "not_implemented" });
+  });
 });
