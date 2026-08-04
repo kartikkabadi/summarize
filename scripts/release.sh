@@ -60,6 +60,7 @@ const raw = execFileSync("tar", ["-xOzf", tarball, "package/package.json"], {
 const pkg = JSON.parse(raw);
 if (pkg.name !== packageName) fail(`Expected ${packageName}, got ${pkg.name || "<missing>"}`);
 if (pkg.version !== version) fail(`Expected ${packageName}@${version}, got ${pkg.version || "<missing>"}`);
+if (pkg.license !== "MIT") fail(`Expected ${packageName}@${version} license MIT, got ${pkg.license || "<missing>"}`);
 const metadata = JSON.stringify({
   dependencies: pkg.dependencies || {},
   devDependencies: pkg.devDependencies || {},
@@ -148,7 +149,7 @@ phase_bun() {
 phase_verify_pack() {
   banner "Verify pack"
   require_lockstep_versions
-  local version tmp_dir tarball core_tarball install_dir node_path slides_dir fixture
+  local version tmp_dir tarball core_tarball core_members install_dir node_path slides_dir fixture
   version="$(node -p 'require("./package.json").version')"
   tmp_dir="$(mktemp -d)"
   core_tarball="${tmp_dir}/steipete-summarize-core-${version}.tgz"
@@ -165,6 +166,28 @@ phase_verify_pack() {
   fi
   verify_package_manifest "${core_tarball}" "@steipete/summarize-core" "${version}"
   verify_package_manifest "${tarball}" "@steipete/summarize" "${version}" "${version}"
+  core_members="${tmp_dir}/core-members.txt"
+  tar -tzf "${core_tarball}" >"${core_members}"
+  for member in \
+    package/LICENSE \
+    package/THIRD_PARTY_NOTICES.md \
+    package/dist/ffmpeg-wasm/node/COPYING.LGPLv2.1 \
+    package/dist/ffmpeg-wasm/node/COPYING.LAME \
+    package/dist/ffmpeg-wasm/node/LICENSE.LAME.md \
+    package/dist/ffmpeg-wasm/node/SOURCE.json \
+    package/dist/ffmpeg-wasm/node/source/RELINKING.md \
+    package/dist/ffmpeg-wasm/node/source/PATCHES.md \
+    package/dist/ffmpeg-wasm/node/source/rebuild.sh \
+    package/dist/ffmpeg-wasm/node/source/SHA256SUMS \
+    package/dist/ffmpeg-wasm/node/source/offline-source.patch \
+    package/dist/ffmpeg-wasm/node/source/build-19d425b80db2bfe2621f653de65599494aed4072.tar.gz \
+    package/dist/ffmpeg-wasm/node/source/ffmpeg-239f2c733de417201d7ad3b3b8b0d9b63285b2b1.tar.gz \
+    package/dist/ffmpeg-wasm/node/source/lame-2badea1974ae36cb8312afe99cff1e6b3b5decee.tar.gz; do
+    if ! grep -Fxq "${member}" "${core_members}"; then
+      echo "Missing ${member} from ${core_tarball}"
+      exit 1
+    fi
+  done
   install_dir="${tmp_dir}/install"
   run mkdir -p "${install_dir}"
   run npm install --prefix "${install_dir}" "${core_tarball}" "${tarball}"

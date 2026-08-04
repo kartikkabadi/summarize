@@ -1,6 +1,20 @@
 {
-  "repository": "https://github.com/openclaw/ffmpeg-wasm",
-  "commit": "19d425b80db2bfe2621f653de65599494aed4072",
-  "ffmpegVersion": "n8.1.1",
-  "license": "LGPL-2.1-or-later"
+  "buildRepository": "https://github.com/openclaw/ffmpeg-wasm",
+  "buildCommit": "19d425b80db2bfe2621f653de65599494aed4072",
+  "ffmpegRepository": "https://github.com/FFmpeg/FFmpeg",
+  "ffmpegRef": "n8.1.1",
+  "ffmpegCommit": "239f2c733de417201d7ad3b3b8b0d9b63285b2b1",
+  "lameRepository": "https://github.com/ffmpegwasm/lame",
+  "lameRefAtBuild": "master",
+  "lameCommit": "2badea1974ae36cb8312afe99cff1e6b3b5decee",
+  "emscriptenVersion": "4.0.23",
+  "license": "LGPL-2.1-or-later",
+  "rebuildCommand": "source/rebuild.sh build",
+  "compliancePath": "LGPL-2.1 Section 6(a): complete source and relinking materials bundled in source/",
+  "sourceArchives": {
+    "build-19d425b80db2bfe2621f653de65599494aed4072.tar.gz": "99dd56835086c649a5b0206a6d4389fbff1f67256c98ec5e4ece771acec4ef91",
+    "ffmpeg-239f2c733de417201d7ad3b3b8b0d9b63285b2b1.tar.gz": "9d400c3a980772df5a20d0aea32442d885b046ea295f842a44625fea0f2cb9aa",
+    "lame-2badea1974ae36cb8312afe99cff1e6b3b5decee.tar.gz": "62371f0f4a7f2760ccc7b4c5d760d727ad6486d86ca1f9b209e2057c35d0a3c2"
+  },
+  "relinkingInstructions": "source/RELINKING.md"
 }
