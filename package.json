@@ -2,6 +2,7 @@
   "name": "@steipete/summarize",
   "version": "0.21.3",
   "description": "Link → clean text → summary.",
+  "license": "MIT",
   "bin": {
     "summarize": "./dist/cli.js",
     "summarizer": "./dist/cli.js"
@@ -38,7 +39,7 @@
     "build:bun:test": "pnpm -C packages/core build && bun scripts/build-bun.js --test",
     "build:cli": "node scripts/build-cli.mjs",
     "build:lib": "tsgo -p tsconfig.build.json",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage",
+    "check": "pnpm licenses:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage",
     "clean": "rimraf dist packages/core/dist",
     "dev:cli": "node --import ./scripts/register-typescript.mjs src/cli.ts",
     "docs:build": "node scripts/build-docs-site.mjs",
@@ -46,6 +47,7 @@
     "docs:serve": "bash scripts/docs-serve.sh",
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
+    "licenses:check": "node scripts/verify-ffmpeg-provenance.mjs",
     "lint": "oxlint --type-aware --tsconfig tsconfig.build.json --config .oxlintrc.json .",
     "lint:fix": "oxlint --type-aware --tsconfig tsconfig.build.json --config .oxlintrc.json --fix . && pnpm format",
     "prepare": "pnpm build",

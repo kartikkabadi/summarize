@@ -2,9 +2,12 @@
   "name": "@steipete/summarize-core",
   "version": "0.21.3",
   "description": "Summarize core library (content extraction + prompts).",
+  "license": "MIT",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "type": "module",
   "main": "./dist/esm/index.js",
