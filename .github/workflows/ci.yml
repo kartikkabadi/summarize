@@ -35,6 +35,13 @@ jobs:
       - name: Verify package licenses and FFmpeg provenance
         run: pnpm licenses:check
 
+      - name: Verify bundled relinking materials
+        if: matrix.node == 24
+        run: |
+          packages/core/vendor/ffmpeg-wasm/node/source/rebuild.sh \
+            --prepare-only \
+            "${RUNNER_TEMP}/summarize-ffmpeg-relink"
+
       - name: Lint
         run: pnpm lint
 
@@ -77,17 +84,29 @@ jobs:
             echo "No core pack artifact found in _pack/core" >&2
             exit 1
           fi
-          tar -tf "$CORE_TARBALL" | grep -E '^package/dist/esm/index\.js$'
-          tar -tf "$CORE_TARBALL" | grep -E '^package/dist/esm/content/index\.js$'
-          tar -tf "$CORE_TARBALL" | grep -E '^package/dist/esm/prompts/index\.js$'
-          tar -tf "$CORE_TARBALL" | grep -E '^package/dist/ffmpeg-wasm/node/ffmpeg_g\.wasm$'
-          tar -tf "$CORE_TARBALL" | grep -E '^package/dist/ffmpeg-wasm/node/ffprobe_g\.wasm$'
-          tar -tf "$CORE_TARBALL" | grep -E '^package/LICENSE$'
-          tar -tf "$CORE_TARBALL" | grep -E '^package/THIRD_PARTY_NOTICES\.md$'
-          tar -tf "$CORE_TARBALL" | grep -E '^package/dist/ffmpeg-wasm/node/COPYING\.LGPLv2\.1$'
-          tar -tf "$CORE_TARBALL" | grep -E '^package/dist/ffmpeg-wasm/node/COPYING\.LAME$'
-          tar -tf "$CORE_TARBALL" | grep -E '^package/dist/ffmpeg-wasm/node/LICENSE\.LAME\.md$'
-          tar -tf "$CORE_TARBALL" | grep -E '^package/dist/ffmpeg-wasm/node/SOURCE\.json$'
+          tar -tf "$CORE_TARBALL" > _pack/core-members.txt
+          for member in \
+            package/dist/esm/index.js \
+            package/dist/esm/content/index.js \
+            package/dist/esm/prompts/index.js \
+            package/dist/ffmpeg-wasm/node/ffmpeg_g.wasm \
+            package/dist/ffmpeg-wasm/node/ffprobe_g.wasm \
+            package/LICENSE \
+            package/THIRD_PARTY_NOTICES.md \
+            package/dist/ffmpeg-wasm/node/COPYING.LGPLv2.1 \
+            package/dist/ffmpeg-wasm/node/COPYING.LAME \
+            package/dist/ffmpeg-wasm/node/LICENSE.LAME.md \
+            package/dist/ffmpeg-wasm/node/SOURCE.json \
+            package/dist/ffmpeg-wasm/node/source/RELINKING.md \
+            package/dist/ffmpeg-wasm/node/source/PATCHES.md \
+            package/dist/ffmpeg-wasm/node/source/rebuild.sh \
+            package/dist/ffmpeg-wasm/node/source/SHA256SUMS \
+            package/dist/ffmpeg-wasm/node/source/offline-source.patch \
+            package/dist/ffmpeg-wasm/node/source/build-19d425b80db2bfe2621f653de65599494aed4072.tar.gz \
+            package/dist/ffmpeg-wasm/node/source/ffmpeg-239f2c733de417201d7ad3b3b8b0d9b63285b2b1.tar.gz \
+            package/dist/ffmpeg-wasm/node/source/lame-2badea1974ae36cb8312afe99cff1e6b3b5decee.tar.gz; do
+            grep -Fxq "$member" _pack/core-members.txt
+          done
           tar -xOzf "$CORE_TARBALL" package/package.json | node -e '
             let input = "";
             process.stdin.on("data", (chunk) => (input += chunk));

@@ -48,3 +48,17 @@ pnpm build
 ```
 
 The build repository documents the required system packages and uses the build script at `scripts/build.ts`.
+
+## Relinking materials
+
+The WebAssembly executables statically include LGPL-covered LAME code. To support modification and relinking under LGPL-2.1 Section 6(a), the npm package distributes the complete machine-readable source used for FFmpeg and LAME, the complete build-source snapshot, the local build patch, integrity hashes, and an offline preparation/rebuild script at:
+
+- `dist/ffmpeg-wasm/node/source/RELINKING.md`
+- `dist/ffmpeg-wasm/node/source/rebuild.sh`
+- `dist/ffmpeg-wasm/node/source/SHA256SUMS`
+- `dist/ffmpeg-wasm/node/source/offline-source.patch`
+- `dist/ffmpeg-wasm/node/source/build-19d425b80db2bfe2621f653de65599494aed4072.tar.gz`
+- `dist/ffmpeg-wasm/node/source/ffmpeg-239f2c733de417201d7ad3b3b8b0d9b63285b2b1.tar.gz`
+- `dist/ffmpeg-wasm/node/source/lame-2badea1974ae36cb8312afe99cff1e6b3b5decee.tar.gz`
+
+These materials allow a recipient to modify LAME or FFmpeg and rebuild the combined WebAssembly with Emscripten 4.0.23. They are shipped inside the same npm artifact as the executable WebAssembly rather than being available only through external links.

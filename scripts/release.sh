@@ -174,7 +174,15 @@ phase_verify_pack() {
     package/dist/ffmpeg-wasm/node/COPYING.LGPLv2.1 \
     package/dist/ffmpeg-wasm/node/COPYING.LAME \
     package/dist/ffmpeg-wasm/node/LICENSE.LAME.md \
-    package/dist/ffmpeg-wasm/node/SOURCE.json; do
+    package/dist/ffmpeg-wasm/node/SOURCE.json \
+    package/dist/ffmpeg-wasm/node/source/RELINKING.md \
+    package/dist/ffmpeg-wasm/node/source/PATCHES.md \
+    package/dist/ffmpeg-wasm/node/source/rebuild.sh \
+    package/dist/ffmpeg-wasm/node/source/SHA256SUMS \
+    package/dist/ffmpeg-wasm/node/source/offline-source.patch \
+    package/dist/ffmpeg-wasm/node/source/build-19d425b80db2bfe2621f653de65599494aed4072.tar.gz \
+    package/dist/ffmpeg-wasm/node/source/ffmpeg-239f2c733de417201d7ad3b3b8b0d9b63285b2b1.tar.gz \
+    package/dist/ffmpeg-wasm/node/source/lame-2badea1974ae36cb8312afe99cff1e6b3b5decee.tar.gz; do
     if ! grep -Fxq "${member}" "${core_members}"; then
       echo "Missing ${member} from ${core_tarball}"
       exit 1

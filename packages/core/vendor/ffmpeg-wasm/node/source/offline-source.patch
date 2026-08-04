@@ -1,0 +1,20 @@
+--- a/scripts/build.ts	2026-08-04 13:58:26.558435090 +0000
++++ b/scripts/build.ts	2026-08-04 13:58:26.559435087 +0000
+@@ -103,3 +103,11 @@
+-ensureCheckout(nodeSrcDir, "https://github.com/FFmpeg/FFmpeg.git", ffmpegTag);
+-ensureCheckout(browserSrcDir, "https://github.com/FFmpeg/FFmpeg.git", ffmpegTag);
+-ensureCheckout(lameDir, "https://github.com/ffmpegwasm/lame.git", lameRef);
++if (process.env.SUMMARIZE_OFFLINE_SOURCE === "1") {
++  for (const dir of [nodeSrcDir, browserSrcDir, lameDir]) {
++    if (!existsSync(dir)) {
++      throw new Error(`Missing bundled source directory: ${dir}`);
++    }
++  }
++} else {
++  ensureCheckout(nodeSrcDir, "https://github.com/FFmpeg/FFmpeg.git", ffmpegTag);
++  ensureCheckout(browserSrcDir, "https://github.com/FFmpeg/FFmpeg.git", ffmpegTag);
++  ensureCheckout(lameDir, "https://github.com/ffmpegwasm/lame.git", lameRef);
++}
+@@ -143,0 +152,2 @@
++cpSync(resolve(lameDir, "COPYING"), resolve(dist, "COPYING.LAME"));
++cpSync(resolve(lameDir, "LICENSE"), resolve(dist, "LICENSE.LAME.md"));
