@@ -17,11 +17,11 @@ minimumReleaseAgeExclude:
   - "undici@8.4.1"
 
 overrides:
-  protobufjs: 7.6.3
-  shell-quote: 1.8.4
+  protobufjs: 7.6.6
+  shell-quote: 1.12.0
   tmp: 0.2.7
   uuid: 14.0.0
-  vite: 8.0.16
+  vite: 8.1.6
   # Vitest tests use happy-dom; do not install its unused optional jsdom peer.
   "vitest>jsdom": "-"
   # WXT 0.20.26 declares esbuild but its shipped runtime does not import it.
@@ -29,3 +29,19 @@ overrides:
   # Vite 8 uses Rolldown/Oxc here; do not auto-install its legacy optional peers.
   "vite>esbuild": "-"
   "vite>tsx": "-"
+  adm-zip: 0.6.1
+  "brace-expansion@^1": 1.1.21
+  "brace-expansion@^5": 5.0.12
+  js-yaml: 4.3.2
+  linkify-it: 5.0.2
+  fast-uri: 3.1.8
+  sharp: 0.35.5
+  postcss: 8.5.23
+  "undici@^7": 7.29.1
+  "undici@^8": 8.10.2
+  "nanoid@^3": 3.3.18
+  sanitize-html: 2.18.0
+  image-size: 2.0.3
+  markdown-it: 14.3.2
+  source-map-js: 1.2.2
+  tinypool: 2.1.2
