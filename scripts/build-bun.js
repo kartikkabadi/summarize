@@ -86,7 +86,7 @@ function buildOne({ target, outName, version, gitSha }) {
   if (version) env.SUMMARIZE_VERSION = version;
   if (gitSha) env.SUMMARIZE_GIT_SHA = gitSha;
   run(
-    "bun",
+    process.execPath,
     [
       "build",
       join(projectRoot, "src/cli.ts"),
@@ -116,7 +116,7 @@ function buildOne({ target, outName, version, gitSha }) {
 
 function buildFfmpegWasmRunner() {
   console.log("\n🔨 Building FFmpeg WebAssembly Node runner…");
-  run("bun", [
+  run(process.execPath, [
     "build",
     ffmpegWasmRunnerEntry,
     "--minify",
@@ -250,6 +250,12 @@ function pickHostBinary(builds) {
 }
 
 async function main() {
+  if (!Bun.semver.satisfies(Bun.version, ">=1.4.4")) {
+    throw new Error(
+      `Bun 1.4.4 or later is required to build release binaries; found ${Bun.version}.`,
+    );
+  }
+
   console.log("🚀 summarize Bun builder");
   console.log("========================");
 

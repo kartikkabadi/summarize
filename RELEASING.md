@@ -126,7 +126,7 @@ Goal:
 - Homebrew/core autobump points the formula at those assets + sha256
 - Formula should install the compiled `summarize` binary directly (no Bun wrapper script).
 
-1. Build the Bun artifact
+1. Build the Bun artifact with Bun 1.4.4 or later (`.bun-version` pins 1.4.4).
    - `pnpm build:bun:test`
    - This uses `bun build --compile --bytecode`, prints tarball sha256s, and smokes the host binary.
 
